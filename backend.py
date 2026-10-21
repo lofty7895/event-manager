@@ -103,7 +103,7 @@ def edit_organiser_details(Organiser_id: int,updated_values: OrganisersCreate,db
         return organiser
     else:
         raise HTTPException(status_code=404,detail="organiser does not exist")
-"""
+
 @app.put("/Delete_event")
 def delete_event(Event_id: int,db: Session=Depends(get_db)):
     event=db.query(database_schema.events).filter(database_schema.events.event_id==Event_id).first()
@@ -129,6 +129,4 @@ def expired_event(db: Session=Depends(get_db)):
     date_obj=date.today()
     expired_events=db.query(database_schema.organisers).filter(database_schema.events.event_date < date_obj).all()
     return expired_events
-
-"""
 

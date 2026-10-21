@@ -18,7 +18,7 @@ class EventIn(BaseModel):
     venue: str=Field(max_length=100)
     contacts: str
     event_time: time
-    organiser: str,
+    organiser: str
     event_type: str
 
 class EventOut(BaseModel):
@@ -31,7 +31,7 @@ class EventOut(BaseModel):
     contacts: str
     event_time: time
     organiser_id: int
-    organiser: str,
+    organiser: str
     event_type: str
 
 class EventUpdate(BaseModel):
