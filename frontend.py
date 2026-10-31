@@ -145,6 +145,78 @@ def GUI(win: ft.Page):
     if load_error:
         throw_error(load_error)
 
+    def show_details(ev):
+        accent = COMMON_THEME["accent"]
+
+        def close_dialog(e=None):
+            if hasattr(win, "pop_dialog"):      # Flet 1.0+
+                win.pop_dialog()
+            else:                               # older Flet
+                dialog.open = False
+                win.update()
+
+        def detail_row(icon, label, value):
+            return ft.Row(
+                [ft.Icon(icon, size=20, color=accent),
+                 ft.Column(
+                     [ft.Text(label, size=12, color="#676781"),
+                      ft.Text(value or "Not provided", size=15, color="#272543",
+                              selectable=True)],
+                     spacing=2, expand=True,
+                 )],
+                spacing=12,
+                vertical_alignment=ft.CrossAxisAlignment.START,
+            )
+
+        chip = ft.Container(
+            content=ft.Text(ev["type"] or "Event", size=12,
+                            weight=ft.FontWeight.W_600, color=accent),
+            padding=ft.Padding(left=10, right=10, top=3, bottom=3),
+            border_radius=10,
+            bgcolor="#EFECFA",
+        )
+
+        body = ft.Column(
+            spacing=16,
+            tight=True,
+            scroll=ft.ScrollMode.AUTO,
+            controls=[
+                ft.Row([chip, ft.Text(when_label(ev["event_date"]), size=13, color="#676781")],
+                       spacing=10, wrap=True),
+                detail_row(ft.Icons.CALENDAR_MONTH_ROUNDED, "Date",
+                           ev["event_date"].strftime("%A, %d %B %Y")),
+                detail_row(ft.Icons.SCHEDULE_ROUNDED, "Time", ev["event_time"]),
+                detail_row(ft.Icons.LOCATION_ON_ROUNDED, "Venue", ev["venue"]),
+                detail_row(ft.Icons.GROUPS, "Organiser", ev["organiser"]),
+                detail_row(ft.Icons.CALL_ROUNDED, "Contact", ev["contacts"]),
+                detail_row(ft.Icons.NOTES_ROUNDED, "About this event", ev["description"]),
+            ],
+        )
+
+        dialog = ft.AlertDialog(
+            bgcolor="#FFFFFF",
+            shape=ft.RoundedRectangleBorder(radius=18),
+            title=ft.Text(ev["name"], size=22, weight=ft.FontWeight.W_700, color="#272543"),
+            content=ft.Container(content=body, width=460),
+            actions=[
+                ft.Button(
+                    content="Close",
+                    style=ft.ButtonStyle(
+                        bgcolor=accent,
+                        color=COMMON_THEME["on_accent"],
+                        shape=ft.RoundedRectangleBorder(radius=12),
+                    ),
+                    on_click=close_dialog,
+                )
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+
+        if hasattr(win, "show_dialog"):         # Flet 1.0+
+            win.show_dialog(dialog)
+        else:                                   # older Flet
+            win.open(dialog)    
+
     def event_card(event,key):
         accent=COMMON_THEME["accent"]
         d=event["event_date"]
@@ -155,7 +227,7 @@ def GUI(win: ft.Page):
             height=72,
             border_radius=14,
             bgcolor="#EAE5FF",
-            alignment=ft.Alignment(0, 1),
+            alignment=ft.Alignment(0, 0),
             content=ft.Column(
                 [ft.Text(str(d.day), size=26, weight=ft.FontWeight.W_700, color=accent),
                 ft.Text(d.strftime("%b"), size=13, color=accent)],
@@ -192,7 +264,7 @@ def GUI(win: ft.Page):
                 overlay_color={"hovered": "#4E3DB8", "pressed": "#4132A0"},
                 shape=ft.RoundedRectangleBorder(radius=12),
             ),
-            on_click=lambda e, ev=event: throw_error(f'{action}: {ev["name"]}')
+            on_click=lambda e, ev=event: show_details(ev)
         )
 
         controls=[
