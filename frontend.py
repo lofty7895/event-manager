@@ -145,16 +145,6 @@ def GUI(win: ft.Page):
     if load_error:
         throw_error(load_error)
 
-    def show_details(ev):
-        accent = COMMON_THEME["accent"]
-
-        def close_dialog(e=None):
-            if hasattr(win, "pop_dialog"):      # Flet 1.0+
-                win.pop_dialog()
-            else:                               # older Flet
-                dialog.open = False
-                win.update()
-
     def show_details(event):
         accent=COMMON_THEME["accent"]
 
