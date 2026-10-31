@@ -116,7 +116,7 @@ def delete_event(Event_id: int,db: Session=Depends(get_db)):
     
 @app.put("/Delete_organiser")
 def delete_event(Organiser_id: int,db: Session=Depends(get_db)):
-    event=db.query(database_schema.organisers).filter(database_schema.organisers.id).first()
+    event=db.query(database_schema.organisers).filter(database_schema.organisers.id==Organiser_id).first()
     if event:
         db.delete(event)
         db.commit()

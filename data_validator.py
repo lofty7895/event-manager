@@ -19,7 +19,7 @@ class EventIn(BaseModel):
     contacts: str
     event_time: time
     organiser: str
-    event_type: str
+    type: str
 
 class EventOut(BaseModel):
     model_config=ConfigDict(from_attributes=True)
@@ -32,7 +32,7 @@ class EventOut(BaseModel):
     event_time: time
     organiser_id: int
     organiser: str
-    event_type: str
+    type: str
 
 class EventUpdate(BaseModel):
     name: str=Field(max_length=100)
@@ -42,7 +42,7 @@ class EventUpdate(BaseModel):
     contacts: str
     event_time: time
     organiser: str
-    event_type: str
+    type: str
 
 
 

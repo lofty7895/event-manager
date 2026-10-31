@@ -15,13 +15,13 @@ class events(base):
     event_id=Column(BigInteger,primary_key=True,index=False,nullable=False,autoincrement=False)
     name=Column(VARCHAR(100),nullable=False)
     description=Column(Text,nullable=True)
-    event_date=Column(Date,nullable=False)
-    venue=Column(VARCHAR(100),nullable=False)
+    event_date=Column(Date,nullable=True)
+    venue=Column(VARCHAR(100),nullable=True)
     contacts=Column(Text,nullable=False)
-    event_time=Column(Time,nullable=False)
+    event_time=Column(Time,nullable=True)
     organiser_id=Column(BigInteger,ForeignKey(organisers.id),nullable=False)
     organiser=Column(Text,nullable=False)
-    event_type=Column(Text,nullable=False)
+    type=Column(Text,nullable=False)
     eve_rel=relationship("organisers",back_populates="org_rel")
 
 
