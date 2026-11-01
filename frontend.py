@@ -145,77 +145,105 @@ def GUI(win: ft.Page):
     if load_error:
         throw_error(load_error)
 
-    def show_details(ev):
-        accent = COMMON_THEME["accent"]
+    def open_panel(event):
+        accent=COMMON_THEME["accent"]
+        offset=30*(len(win.overlay) % 8)
 
-        def close_dialog(e=None):
-            if hasattr(win, "pop_dialog"):      # Flet 1.0+
-                win.pop_dialog()
-            else:                               # older Flet
-                dialog.open = False
-                win.update()
-
-        def detail_row(icon, label, value):
-            return ft.Row(
-                [ft.Icon(icon, size=20, color=accent),
-                 ft.Column(
-                     [ft.Text(label, size=12, color="#676781"),
-                      ft.Text(value or "Not provided", size=15, color="#272543",
-                              selectable=True)],
-                     spacing=2, expand=True,
-                 )],
+        def detail_row(icon,label,value):
+            club=ft.Row (
+                [ft.Icon(icon,size=20,color=accent),ft.Column(
+                    [ft.Text(label,size=12,color="#676781"),
+                     ft.Text(value,size=15,color="#272543",selectable=True)],
+                    spacing=2,expand=True
+                )],
                 spacing=12,
                 vertical_alignment=ft.CrossAxisAlignment.START,
             )
 
-        chip = ft.Container(
-            content=ft.Text(ev["type"] or "Event", size=12,
-                            weight=ft.FontWeight.W_600, color=accent),
-            padding=ft.Padding(left=10, right=10, top=3, bottom=3),
+            return club
+
+        def drag(e):
+            panel.left=max(0, panel.left+e.local_delta.x)
+            panel.top=max(0, panel.top+e.local_delta.y)
+            panel.update()
+
+        def close(e):
+            win.overlay.remove(panel)
+            win.update()
+
+        def hover_close(e):
+            hovering=str(e.data).lower() == "true"
+            close_btn.bgcolor="#BE185D" if hovering else "#FCE4EC"
+            close_btn.content.color= "#FFFFFF" if hovering else "#BE185D"
+            close_btn.update()
+
+        close_btn=ft.Container(
+            content=ft.Icon(ft.Icons.CLOSE_ROUNDED,size=18,color="#BE185D"),
+            width=32,height=32,
             border_radius=10,
-            bgcolor="#EFECFA",
+            bgcolor="#FCE4EC",
+            alignment=ft.Alignment(0,0),
+            ink=True,
+            on_click=close,
+            on_hover=hover_close
         )
 
-        body = ft.Column(
-            spacing=16,
-            tight=True,
-            scroll=ft.ScrollMode.AUTO,
-            controls=[
-                ft.Row([chip, ft.Text(when_label(ev["event_date"]), size=13, color="#676781")],
-                       spacing=10, wrap=True),
-                detail_row(ft.Icons.CALENDAR_MONTH_ROUNDED, "Date",
-                           ev["event_date"].strftime("%A, %d %B %Y")),
-                detail_row(ft.Icons.SCHEDULE_ROUNDED, "Time", ev["event_time"]),
-                detail_row(ft.Icons.LOCATION_ON_ROUNDED, "Venue", ev["venue"]),
-                detail_row(ft.Icons.GROUPS, "Organiser", ev["organiser"]),
-                detail_row(ft.Icons.CALL_ROUNDED, "Contact", ev["contacts"]),
-                detail_row(ft.Icons.NOTES_ROUNDED, "About this event", ev["description"]),
-            ],
-        )
-
-        dialog = ft.AlertDialog(
-            bgcolor="#FFFFFF",
-            shape=ft.RoundedRectangleBorder(radius=18),
-            title=ft.Text(ev["name"], size=22, weight=ft.FontWeight.W_700, color="#272543"),
-            content=ft.Container(content=body, width=460),
-            actions=[
-                ft.Button(
-                    content="Close",
-                    style=ft.ButtonStyle(
-                        bgcolor=accent,
-                        color=COMMON_THEME["on_accent"],
-                        shape=ft.RoundedRectangleBorder(radius=12),
-                    ),
-                    on_click=close_dialog,
+        title_bar=ft.GestureDetector(
+            mouse_cursor=ft.MouseCursor.MOVE,
+            on_pan_update=drag,
+            drag_interval=10,
+            content=ft.Container(
+                bgcolor="#EAE5FF",
+                padding=ft.Padding(left=18,right=12,top=10,bottom=10),
+                border=ft.Border(bottom=ft.BorderSide(1,'#CFC6F2')),
+                content=ft.Row(
+                    [ft.Icon(ft.Icons.DRAG_INDICATOR,size=18,color=accent),
+                     ft.Text(event["name"],size=17,weight=ft.FontWeight.W_700,
+                             color="#272543",expand=True,max_lines=1,overflow=ft.TextOverflow.ELLIPSIS),
+                    close_btn],
+                    spacing=10,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER
                 )
-            ],
-            actions_alignment=ft.MainAxisAlignment.END,
+            )
         )
 
-        if hasattr(win, "show_dialog"):         # Flet 1.0+
-            win.show_dialog(dialog)
-        else:                                   # older Flet
-            win.open(dialog)    
+        reference_days=ft.Text( when_label(event["event_date"]) , size=18,color="#676781")
+        body=ft.Container(padding=18, expand=True,
+            content = ft.Column(
+            spacing=16,scroll=ft.ScrollMode.AUTO,
+            controls=[
+                    ft.Row( 
+                        [reference_days],spacing=10,wrap=True
+                    ),
+                    detail_row(ft.Icons.CALENDAR_MONTH_ROUNDED,"Date",
+                        event["event_date"].strftime("%A, %d %B %Y")),
+                    detail_row(ft.Icons.SCHEDULE_ROUNDED,"Time",event["event_time"]),
+                    detail_row(ft.Icons.LOCATION_ON_ROUNDED,"Venue",event["venue"]),
+                    detail_row(ft.Icons.NOTES_ROUNDED,"About this event",event["description"]),
+                    detail_row(ft.Icons.GROUPS,"Organiser",event["organiser"]),
+                    detail_row(ft.Icons.CALL_ROUNDED,"Contact",event["contacts"])
+            ]
+            )
+        )
+
+        panel=ft.Container(
+            width=600,
+            height=620,
+            left=120+offset,top=80+offset,
+            bgcolor="#FFFFFF",
+            border_radius=18,
+            border=outline("#E3DFF0"),
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            shadow=ft.BoxShadow(
+                blur_radius=18,
+                color=ft.Colors.with_opacity(0.15,"#6559A8"),
+                offset=ft.Offset(0,5)
+            ),
+            content=ft.Column([title_bar,body],spacing=0,tight=True),
+        )
+
+        win.overlay.append(panel)
+        win.update()
 
     def event_card(event,key):
         accent=COMMON_THEME["accent"]
@@ -223,6 +251,7 @@ def GUI(win: ft.Page):
         action=THEMES[key]["action"]
 
         date_tile = ft.Container(
+            margin=ft.Margin(left=0,right=0,top=24,bottom=0),
             width=64, 
             height=72,
             border_radius=14,
@@ -232,7 +261,7 @@ def GUI(win: ft.Page):
                 [ft.Text(str(d.day), size=26, weight=ft.FontWeight.W_700, color=accent),
                 ft.Text(d.strftime("%b"), size=13, color=accent)],
                 spacing=0, tight=True,
-                alignment=ft.MainAxisAlignment.CENTER,
+                alignment=ft.MainAxisAlignment.END,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             ),
         )
@@ -264,7 +293,7 @@ def GUI(win: ft.Page):
                 overlay_color={"hovered": "#4E3DB8", "pressed": "#4132A0"},
                 shape=ft.RoundedRectangleBorder(radius=12),
             ),
-            on_click=lambda e, ev=event: show_details(ev)
+            on_click=lambda e, ev=event: open_panel(ev)
         )
 
         controls=[
