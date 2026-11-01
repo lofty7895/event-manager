@@ -6,7 +6,7 @@ import sys
 import time
 import requests
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, datetime
 from datetime_formatter import parse_date,pretty_time,when_label
 
 load_dotenv()
@@ -145,6 +145,97 @@ def GUI(win: ft.Page):
     if load_error:
         throw_error(load_error)
 
+    def open_create_form(e=None):
+        year=date.today().year
+        accent=COMMON_THEME["accent"]
+        days=[i for i in range(1,32)]
+        months=[i for i in range (1,13)]
+        years=[year,year+1]
+        hours=[i for i in range(1,13)]
+        minutes=[i for i in range(1,61)]
+        am_pm=["AM","PM"]
+
+
+        def close_form(e=None):
+            if layer in win.overlay:
+                win.overlay.remove(layer)
+                win.update()
+
+        close_btn=ft.Container(
+            content=ft.Icon(ft.Icons.CLOSE_ROUNDED,size=18,color="#BE185D"),
+            width=32,
+            height=32,
+            bgcolor="#FCE4EC"
+            alignment=ft.Alignmet(0,0),
+            ink=True,
+            on_click=close_form
+        )
+
+        add_icon=ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, size=22, color=accent)
+        button_Text=ft.Text("Create new event",size=19,weight=ft.FontWeight.W_700,color="#272543",expand=True)
+        header=ft.Container(
+            bgcolor="#EAE5FF",
+            padding=ft.Padding(left=22,right=14,top=14,bottom=14),
+            border=ft.Border(bottom=ft.BorderSide(1,"#CFC6F2")),
+            content=ft.Row([add_icon,button_Text,close_btn],spacing=10,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER
+                        )
+        )
+
+        def field(label,**kwargs):
+            text_field=ft.TextField(
+                lable=label,
+                border_Radius=12,
+                border_color="#E0DAF0",
+                focused_border_color=accent,
+                bgcolor="#FFFFFF",
+                text_size=15,
+                **kwargs
+            )
+            return text_field
+
+        def dropdown_menu(title,width_x,list):
+            dropdown=ft.dropdown(label=title,width=width_x,
+                    options=[ft.dropdown.Option(i) for i in list]
+            )
+            return dropdown
+
+        name_F=field("Event name *",autofocus=True)
+        description_f=field("Description",multiline=True)
+        day_f=dropdown_menu("Day",100,days)
+        month_f=dropdown_menu("Month",100,months)
+        year_f=dropdown_menu("Year",130,years)
+        hour_f=dropdown_menu("Hour",100,hours)
+        minutes_f=dropdown_menu("Minute",100,minutes)
+        am_pm_f=dropdown_menu("Time Period",200,am_pm)
+        venue_f=field("Venue")
+        organiser_f=field("Organiser*")
+        
+
+        
+        
+        card=ft.Container(
+            width=1000,
+            height=800,
+            bgcolor="#FFFFFF",
+            border_radius=18,
+            clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
+            content=ft.Column([header],spacing=0)
+        )
+
+        layer=ft.Container(
+            left=0,right=0,top=0,bottom=0,
+            bgcolor=ft.Colors.with_opacity(0.45,"#272543"),
+            alignment=ft.Alignment(0,0),
+            content=card
+        )
+
+
+
+        win.overlay.append(layer)
+        win.update()
+
+        
     def open_panel(event):
         accent=COMMON_THEME["accent"]
         offset=30*(len(win.overlay) % 8)
@@ -227,8 +318,9 @@ def GUI(win: ft.Page):
         )
 
         panel=ft.Container(
-            width=600,
-            height=620,
+            width=1000,
+            height=900,
+            padding=ft.Padding(bottom=20),
             left=120+offset,top=80+offset,
             bgcolor="#FFFFFF",
             border_radius=18,
@@ -390,12 +482,32 @@ def GUI(win: ft.Page):
         refresh_menu()
         refresh_content()
         win.update()
+        
+    create_btn = ft.Button(
+        content="Create new event",
+        icon=ft.Icons.ADD_ROUNDED,
+        height=46,
+        style=ft.ButtonStyle(
+            bgcolor=COMMON_THEME["accent"],
+            color=COMMON_THEME["on_accent"],
+            overlay_color={"hovered": "#4E3DB8", "pressed": "#4132A0"},
+            shape=ft.RoundedRectangleBorder(radius=12),
+        ),
+        on_click=open_create_form,
+    )
 
-    menu_bar=ft.Row([build_menu_item(selected_menu) for selected_menu in MENU_ORDER],spacing=16,run_spacing=6,wrap=True)
+    menu_bar=ft.Row([build_menu_item(selected_menu) for selected_menu in MENU_ORDER],expand=True,spacing=16,run_spacing=6,wrap=True)
     subtitle_text=ft.Text(size=18,weight=ft.FontWeight.W_600,color=COMMON_THEME["accent"])
     event_list=ft.Column(spacing=14,expand=True,scroll=ft.ScrollMode.AUTO)
 
-    root.content=ft.Column( [menu_bar,subtitle_text,event_list], spacing=20,expand=True)
+    root.content = ft.Column(
+        [ft.Row([menu_bar, create_btn],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER),
+         subtitle_text, event_list],
+        spacing=20, expand=True,
+    )
+
     win.add(
         ft.Row(root,expand=True,vertical_alignment=ft.CrossAxisAlignment.STRETCH)
     )
