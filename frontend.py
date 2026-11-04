@@ -178,6 +178,30 @@ def GUI(win: ft.Page):
                 win.overlay.remove(layer)
                 win.update()
 
+
+
+        file_picker=ft.FilePicker()
+        selected_image=ft.Text("No image selected")
+        async def pick_image(e):
+            files= await file_picker.pick_files(
+                allow_multiple=True,
+                file_type=ft.FilePickerFileType.IMAGE
+
+            )
+            if files:
+                names=[i.name for i in files]
+                file_names=""
+                for i in names:
+                    file_names.join(i)
+                    if i==names[len(names)-1]:
+                        break
+                    file_names.join(", ")
+                
+                selected_image.value=f"Selected: {file_names}"
+            selected_image.update()
+
+
+        
         close_btn=ft.Container(
             content=ft.Icon(ft.Icons.CLOSE_ROUNDED,size=18,color="#BE185D"),
             width=32,
@@ -209,6 +233,8 @@ def GUI(win: ft.Page):
                 },
                 bgcolor="#FFFFFF",
                 text_size=15,
+                focused_bgcolor="#FFFFFF",
+                hover_color="#FFFFFF",
                 **kwargs
             )
             return text_field
@@ -237,6 +263,44 @@ def GUI(win: ft.Page):
         time_f=ft.Row([hour_f,minutes_f,am_pm_f],spacing=6)
         
         date_time_f=ft.Row([date_f,time_f],spacing=90)
+        
+        
+
+        upload_area=ft.Container(
+            content=ft.Column(
+                controls=[
+                    ft.Icon(
+                        ft.Icons.IMAGE_OUTLINED,
+                        size=45,
+                        color="#6554D9"
+                    ),
+                    ft.Text(
+                        "Upload event image",
+                        size=16,
+                        weight=ft.FontWeight.BOLD
+                    ),
+                    ft.Text(
+                        "Click below to browse your files",
+                        size=12,
+                        color=""
+                    ),
+                    ft.Button(
+                        content="Browse images",
+                        on_click=pick_image
+                    ),
+                    selected_image
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=15
+            ),
+            width=900,
+            height=200,
+            border=ft.Border.all(1,"C8BFF0"),
+            border_radius=12,
+            alignment=ft.Alignment.CENTER,
+            bgcolor="#F8F7FC",
+            padding=15
+        )
 
         error_msg=ft.Text("",size=13,color="#BE185D",visible=False)
 
@@ -362,7 +426,7 @@ def GUI(win: ft.Page):
                 expand=True,
                 padding=ft.Padding(left=22,right=22,top=18,bottom=8),
                 content=ft.Column(
-                    [name_f,description_f,date_time_f,venue_f,organiser_f,contacts_f,type_f],
+                    [name_f,description_f,date_time_f,venue_f,organiser_f,contacts_f,type_f,upload_area],
                     spacing=14,scroll=ft.ScrollMode.AUTO,expand=True
                 ),
         )
