@@ -1,4 +1,4 @@
-from datetime import date,datetime,timedelta
+from datetime import date,datetime,timedelta,time
 from database_schema import events
 
 
@@ -16,6 +16,14 @@ def get_date(raw_date: str):
     else:
         return "enter date in correct format"
 
+
+def convert_to_date(day,month,year):
+    date_obj=datetime.strptime(f"{year}-{month}-{day}")
+    return date_obj
+
+def convert_to_time(hour,minutes,meridian):
+    time_obj=datetime.strptime(f"{hour}:{minutes} {meridian}","%I:%M %p")
+    return time_obj
 
 def parse_date(value):
     try:

@@ -7,7 +7,7 @@ import time
 import requests
 from dotenv import load_dotenv
 from datetime import date, datetime
-from datetime_formatter import parse_date,pretty_time,when_label
+from datetime_formatter import parse_date,pretty_time,when_label,convert_to_date,convert_to_time
 
 load_dotenv()
 api_url=os.environ.get("API_URL")
@@ -133,27 +133,44 @@ def GUI(win: ft.Page):
     root.gradient=background(COMMON_THEME)
     state={"active": "today"}
 
+    def throw_error(message):
+        error=ft.SnackBar(
+            content=ft.Text(message,color=COMMON_THEME["on_accent"]),
+            bgcolor=COMMON_THEME["accent"]
+        )
+        if hasattr(win,"show_dialog"):
+            win.show_dialog(error)
+        else:
+            win.open(error)
+
     try:
         groups=group_events(fetch_events())
-        print (f"{groups} events are present")
         load_error=None
     except requests.RequestException:
         groups=group_events([])
-        print (f"{groups} is none")
         load_error="Could not reach the server"
 
     if load_error:
         throw_error(load_error)
 
+    def reload_events():
+        nonlocal groups
+        try:
+            groups=group_events(fetch_events())
+        except requests.RequestException:
+            throw_error("Could not refresh events")
+
     def open_create_form(e=None):
         year=date.today().year
         accent=COMMON_THEME["accent"]
+
         days=[i for i in range(1,32)]
         months=[i for i in range (1,13)]
         years=[year,year+1]
         hours=[i for i in range(1,13)]
-        minutes=[i for i in range(1,61)]
+        minutes=[i for i in range(0,60)]
         am_pm=["AM","PM"]
+        event_type=["Hackathon","Buildathon","Workshop","Conference","Seminar","Webinar","Guest Lectures","Concert","Others"]
 
 
         def close_form(e=None):
@@ -165,8 +182,8 @@ def GUI(win: ft.Page):
             content=ft.Icon(ft.Icons.CLOSE_ROUNDED,size=18,color="#BE185D"),
             width=32,
             height=32,
-            bgcolor="#FCE4EC"
-            alignment=ft.Alignmet(0,0),
+            bgcolor="#FCE4EC",
+            alignment=ft.Alignment(0,0),
             ink=True,
             on_click=close_form
         )
@@ -182,45 +199,193 @@ def GUI(win: ft.Page):
                         )
         )
 
-        def field(label,**kwargs):
+        def field(label_x,**kwargs):
             text_field=ft.TextField(
-                lable=label,
-                border_Radius=12,
-                border_color="#E0DAF0",
-                focused_border_color=accent,
+                label=label_x,
+                border={
+                ft.ControlState.ERROR: ft.OutlineInputBorder(border_radius=12,side=ft.BorderSide(2,"#BE185D")),
+                ft.ControlState.FOCUSED: ft.OutlineInputBorder(border_radius=12,side=ft.BorderSide(2,accent)),
+                ft.ControlState.DEFAULT: ft.OutlineInputBorder(border_radius=12,side=ft.BorderSide(1,"#E0DAF0"))
+                },
                 bgcolor="#FFFFFF",
                 text_size=15,
                 **kwargs
             )
             return text_field
 
-        def dropdown_menu(title,width_x,list):
-            dropdown=ft.dropdown(label=title,width=width_x,
-                    options=[ft.dropdown.Option(i) for i in list]
+        def dropdown_menu(title,width_x,list_x,**kwargs):
+            dropdown=ft.Dropdown(label=title,width=width_x,
+                    options=[ft.DropdownOption(key=str(i), text=str(i)) for i in list_x],**kwargs
             )
             return dropdown
 
-        name_F=field("Event name *",autofocus=True)
-        description_f=field("Description",multiline=True)
+        name_f=field("Event Name *",autofocus=True,width=900)
+        description_f=field("Description",multiline=True,width=900,min_lines=15)
         day_f=dropdown_menu("Day",100,days)
-        month_f=dropdown_menu("Month",100,months)
+        month_f=dropdown_menu("Month",130,months)
         year_f=dropdown_menu("Year",130,years)
-        hour_f=dropdown_menu("Hour",100,hours)
-        minutes_f=dropdown_menu("Minute",100,minutes)
-        am_pm_f=dropdown_menu("Time Period",200,am_pm)
+        hour_f=dropdown_menu("Hour",130,hours)
+        minutes_f=dropdown_menu("Minute",130,minutes)
+        am_pm_f=dropdown_menu("Time Period",180,am_pm)
         venue_f=field("Venue")
-        organiser_f=field("Organiser*")
-        
+        organiser_f=field("Organiser *",hint_text="Organiser * (must already be registered)")
+        contacts_f=field("Contacts *",min_lines=2,multiline=True)
+        type_f=dropdown_menu("Type *",300,event_type,value="Others")
+        required=[name_f,organiser_f,contacts_f,type_f]
 
+        date_f=ft.Row([day_f,month_f,year_f],spacing=6)
+        time_f=ft.Row([hour_f,minutes_f,am_pm_f],spacing=6)
+        
+        date_time_f=ft.Row([date_f,time_f],spacing=90)
+
+        error_msg=ft.Text("",size=13,color="#BE185D",visible=False)
+
+        def set_field_error(control, has_error):
+            control.border = {
+            ft.ControlState.DEFAULT: ft.OutlineInputBorder(
+                border_radius=12,
+                side=ft.BorderSide(
+                width=2 if has_error else 1,
+                color="#BE185D" if has_error else "#E0DAF0"
+                )
+            ),
+            ft.ControlState.FOCUSED: ft.OutlineInputBorder(
+                border_radius=12,
+                side=ft.BorderSide(width=2, color=accent),
+            ),
+            ft.ControlState.ERROR: ft.OutlineInputBorder(
+                border_radius=12,
+                side=ft.BorderSide(width=2, color="#BE185D"),
+            )
+            }
+
+
+        def show_error(message):
+            error_msg.value=message
+            error_msg.visible=True
+            win.update()
+
+        def submit(e):
+            error_msg.visible=False
+            for f in required:
+                set_field_error(f,False)
+
+            missing=[f for f in required if not (f.value or "").strip()]
+            if missing:
+                for f in missing:
+                    set_field_error(f,True)
+                show_error("Please fill in the fields marked with *")
+                return
+
+            
+
+            payload={
+                "event_name": name_f.value.strip(),
+                "description": (description_f.value or "").strip(),
+                "event_date": (convert_to_date(year_f.value,month_f.value,day_f.value) or ""),
+                "event_time": (convert_to_time(hour_f.value,minutes_f.value,am_pm_f.value) or ""),
+                "venue": (venue_f.value or "").strip(),
+                "organiser": organiser_f.value.strip(),
+                "contacts": contacts_f.value.strip(),
+                "type": type_f.value        
+            }
+
+            submit_btn.disabled=True
+            submit_btn.content="Saving..."
+            win.update()
+
+            try:
+                r=requests.post(f"{api_url}/Post_event",json=payload,timeout=5)
+            except requests.RequestException:
+                r=None
+
+            submit_btn.disabled=False
+            submit_btn.content="Submit"
+
+            if r is None:
+                show_error("Could not reach the server")
+                return
+            elif r.status_code==404:
+                show_error("Organiser not found. Check the spelling or register them first.")
+                return
+            elif not r.ok:
+                print (r.status_code,r.text)
+                show_error(f"The server rejected the event ({r.status_code})")
+                return
+
+            close_form()
+            reload_events()
+            refresh_menu()
+            refresh_content()
+            win.update()
+            throw_error("Event created")
+
+        cancel_btn=ft.TextButton(
+            content="Cancel",
+            style=ft.ButtonStyle(
+                color="#5141B8",
+                shape=ft.RoundedRectangleBorder(radius=12)
+            ),
+            on_click=close_form
+        )
+
+        submit_btn=ft.Button(
+            content="Submit",
+            height=42,
+            style=ft.ButtonStyle(
+                bgcolor=accent,
+                color=COMMON_THEME["on_accent"],
+                overlay_color={"hovered": "#4E3DB8","pressed": "#4132A0"},
+                shape=ft.RoundedRectangleBorder(radius=12)
+            ),
+            on_click=submit
+        )
+
+        submit_cancel=ft.Row([cancel_btn,submit_btn],alignment=ft.MainAxisAlignment.END,spacing=10)
+
+        header = ft.Container(
+            bgcolor="#EAE5FF",
+            padding=ft.Padding(left=22, right=14, top=14, bottom=14),
+            border=ft.Border(bottom=ft.BorderSide(1, "#CFC6F2")),
+            content=ft.Row(
+                [ft.Icon(ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, size=22, color=accent),
+                 ft.Text("Create new event", size=19, weight=ft.FontWeight.W_700,
+                         color="#272543", expand=True),
+                 close_btn],
+                spacing=10,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            ),
+        )
         
         
+        body=ft.Container(
+                expand=True,
+                padding=ft.Padding(left=22,right=22,top=18,bottom=8),
+                content=ft.Column(
+                    [name_f,description_f,date_time_f,venue_f,organiser_f,contacts_f,type_f],
+                    spacing=14,scroll=ft.ScrollMode.AUTO,expand=True
+                ),
+        )
+
+        footer=ft.Container(
+                    padding=ft.Padding(left=22,right=22,top=10,bottom=16),
+                    content=ft.Column([error_msg,submit_cancel],spacing=8,tight=True)
+        )
+    
+    
+
         card=ft.Container(
             width=1000,
             height=800,
             bgcolor="#FFFFFF",
             border_radius=18,
             clip_behavior=ft.ClipBehavior.ANTI_ALIAS,
-            content=ft.Column([header],spacing=0)
+            shadow=ft.BoxShadow(
+                blur_radius=24,
+                color=ft.Colors.with_opacity(0.25,"#6559A8"),
+                offset=ft.Offset(0,8)
+            ),
+            content=ft.Column([header,body,footer],spacing=0)
         )
 
         layer=ft.Container(
@@ -420,16 +585,6 @@ def GUI(win: ft.Page):
         )
 
 
-    def throw_error(message):
-        error=ft.SnackBar(
-            content=ft.Text(message,color=COMMON_THEME["on_accent"]),
-            bgcolor=COMMON_THEME["accent"]
-        )
-        if hasattr(win,"show_dialog"):
-            win.show_dialog(error)
-        else:
-            win.open(error)
-
     
 
     def build_menu_item(choice):
@@ -472,9 +627,9 @@ def GUI(win: ft.Page):
 
         events=groups[choice]
         if events:
-            event_list.controls=([event_card(e,choice) for e in events])
+            event_list.controls=[event_card(e,choice) for e in events]
         else:
-            event_list.controls=ft.Text(theme["empty"],size=16,color="#BE185D")
+            event_list.controls=[ft.Text(theme["empty"],size=16,color="#BE185D")]
         
 
     def select(choice):
