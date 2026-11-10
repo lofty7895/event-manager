@@ -144,7 +144,7 @@ Users will sign in with Google. After sign-in, an **Accounts** section appears i
 | **Organiser** | Signed-in email matches an `organisers.email_id` | **Manage my events** is enabled: edit or delete only the events they own |
 | **Admin** | Signed-in email is flagged as admin (see below) | Everything an organiser has, plus **add / remove organisers** and **add / remove events** |
 
-### Suggested design
+### Proposed design
 
 - **Token flow:** Flet completes the Google sign-in and sends the Google ID token to the backend as a `Bearer` token. The backend verifies it (for example with `google-auth`) and reads the verified email from it. Roles should be decided on the server, never trusted from the client.
 - **Admin flag:** add a `role` column (`student` / `organiser` / `admin`) or an `admins` table so admin rights are explicit.
@@ -216,6 +216,8 @@ python client_creator.py
 > On Flet versions older than 1.0, replace `ft.run(...)` with `ft.app(target=...)`.
 
 ---
+
+How to setup the environment variables will also be added later in the program.Also A Script to create database and tables like my program will be added later
 
 ## Environment Variables
 
